@@ -4,14 +4,10 @@ namespace App\Dto\Task;
 
 class TaskInput
 {
-    protected string $title;
-    protected ?string $description;
-
-    public function __construct(string $title, ?string $description)
-    {
-        $this->title = $title;
-        $this->description = $description;
-    }
+    public function __construct(
+        protected string $title,
+        protected ?string $description
+    ) { }
 
     public static function fromArray(array $data): self
     {
