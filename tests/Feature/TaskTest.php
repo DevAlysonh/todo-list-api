@@ -5,19 +5,21 @@ namespace Tests\Feature;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\Response;
 use Tests\TestCase;
 
 class TaskTest extends TestCase
 {
     use DatabaseTransactions;
     protected $token;
+    protected User $user;
 
     public function setup(): void
     {
         parent::setUp();
 
-        $user = User::factory()->create();
-        $this->token = auth('api')->login($user);
+        $this->user = User::factory()->create();
+        $this->token = auth('api')->login($this->user);
     }
 
     public function test_ifATaskCanBeCreated(): void
@@ -42,6 +44,7 @@ class TaskTest extends TestCase
         $task = Task::factory()->create([
             'title' => 'Old Title',
             'description' => 'Old Description',
+            'user_id' => $this->user->id
         ]);
 
         $updatedData = [
@@ -60,7 +63,9 @@ class TaskTest extends TestCase
 
     public function test_ifATaskCanBeMarkedAsCompleted(): void
     {
-        $task = Task::factory()->create();
+        $task = Task::factory()
+            ->state(['user_id' => $this->user->id])
+            ->create();
 
         $response = $this->withHeader('Authorization', "Bearer $this->token")
             ->patchJson(route('tasks.mark.done', $task->id));
@@ -76,12 +81,52 @@ class TaskTest extends TestCase
 
     public function test_ifATaskCanBeDeleted(): void
     {
-        $task = Task::factory()->create();
+        $task = Task::factory()->state(['user_id' => $this->user->id])->create();
 
         $response = $this->withHeader('Authorization', "Bearer $this->token")
             ->deleteJson(route('tasks.delete', $task->id));
         $response->assertStatus(204);
 
         $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
+    }
+    public function test_userCannotUpdateTaskHeDoesNotOwn(): void
+    {
+        $anotherUser = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $anotherUser->id]);
+    
+        $updateData = [
+            'title' => 'Hacked Title',
+            'description' => 'Hacked Description',
+        ];
+    
+        $response = $this->withHeader('Authorization', "Bearer $this->token")
+            ->patchJson(route('tasks.update', $task->id), $updateData);
+    
+        $response->assertStatus(Response::HTTP_UNAUTHORIZED);
+        $this->assertEquals($response->getData()->error, 'Você não tem permissão para executar esta ação.');
+    }
+
+    public function test_userCannotViewTaskHeDoesNotOwn(): void
+    {
+        $anotherUser = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $anotherUser->id]);
+    
+        $response = $this->withHeader('Authorization', "Bearer $this->token")
+            ->getJson(route('tasks.show', $task->id));
+    
+        $response->assertStatus(Response::HTTP_UNAUTHORIZED);
+        $this->assertEquals($response->getData()->error, 'Você não tem permissão para executar esta ação.');
+    }
+    
+    public function test_userCannotDeleteTaskHeDoesNotOwn(): void
+    {
+        $anotherUser = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $anotherUser->id]);
+    
+        $response = $this->withHeader('Authorization', "Bearer $this->token")
+            ->deleteJson(route('tasks.delete', $task->id));
+    
+        $response->assertStatus(Response::HTTP_UNAUTHORIZED);
+        $this->assertEquals($response->getData()->error, 'Você não tem permissão para executar esta ação.');
     }
 }
