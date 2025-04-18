@@ -14,6 +14,7 @@ Route::middleware('jwt')->group(function () {
 });
 
 Route::middleware('jwt')->controller(TaskController::class)->group(function () {
+    Route::get('/tasks', 'index')->name('tasks.all');
     Route::post('/tasks', 'store')->name('tasks.new');
     Route::patch('/tasks/{task}', 'update')->name('tasks.update');
     Route::delete('/tasks/{task}', 'destroy')->name('tasks.delete');

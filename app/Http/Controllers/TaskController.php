@@ -7,6 +7,7 @@ use App\Dto\Task\TaskInput;
 use App\Http\Requests\Task\MarkTaskAsDoneRequest;
 use App\Http\Requests\Task\NewTaskRequest;
 use App\Http\Requests\Task\UpdateTaskRequest;
+use App\Http\Resources\Task\TaskListResource;
 use App\Http\Resources\Task\TaskResource;
 use App\Models\Task;
 use App\Services\TaskService;
@@ -21,7 +22,7 @@ class TaskController extends Controller
 
     public function index()
     {
-        //
+        return response()->json(new TaskListResource(Task::paginate(6)));
     }
 
     public function store(NewTaskRequest $request): JsonResponse
