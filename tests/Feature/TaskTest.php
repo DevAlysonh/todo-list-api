@@ -3,12 +3,22 @@
 namespace Tests\Feature;
 
 use App\Models\Task;
+use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class TaskTest extends TestCase
 {
     use DatabaseTransactions;
+    protected $token;
+
+    public function setup(): void
+    {
+        parent::setUp();
+
+        $user = User::factory()->create();
+        $this->token = auth('api')->login($user);
+    }
 
     public function test_ifATaskCanBeCreated(): void
     {
@@ -17,7 +27,8 @@ class TaskTest extends TestCase
             'description' => 'bar',
         ];
 
-        $response = $this->postJson(route('tasks.new'), $taskData);
+        $response = $this->withHeader('Authorization', "Bearer $this->token")
+            ->postJson(route('tasks.new'), $taskData);
         $response->assertStatus(201);
 
         $created = $response->getData();
@@ -38,7 +49,8 @@ class TaskTest extends TestCase
             'description' => 'New Description',
         ];
 
-        $response = $this->patchJson(route('tasks.update', $task->id), $updatedData);
+        $response = $this->withHeader('Authorization', "Bearer $this->token")
+            ->patchJson(route('tasks.update', $task->id), $updatedData);
         $response->assertStatus(200);
 
         $this->assertDatabaseHas('tasks', $updatedData);
@@ -50,7 +62,8 @@ class TaskTest extends TestCase
     {
         $task = Task::factory()->create();
 
-        $response = $this->patchJson(route('tasks.mark.done', $task->id));
+        $response = $this->withHeader('Authorization', "Bearer $this->token")
+            ->patchJson(route('tasks.mark.done', $task->id));
         $response->assertStatus(200);
 
         $this->assertDatabaseHas('tasks', [
@@ -65,7 +78,8 @@ class TaskTest extends TestCase
     {
         $task = Task::factory()->create();
 
-        $response = $this->deleteJson(route('tasks.delete', $task->id));
+        $response = $this->withHeader('Authorization', "Bearer $this->token")
+            ->deleteJson(route('tasks.delete', $task->id));
         $response->assertStatus(204);
 
         $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
