@@ -9,7 +9,7 @@ class TaskFactory extends Factory
     public function definition(): array
     {
         return [
-            'title' => fake()->title(),
+            'title' => fake()->sentence(3, true),
             'description' => fake()->sentence(15, false)
         ];
     }
