@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Task;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -23,5 +24,50 @@ class TaskTest extends TestCase
         $this->assertDatabaseHas('tasks', $taskData);
         $this->assertEquals($taskData['title'], $created->title);
         $this->assertEquals($taskData['description'], $created->description);
+    }
+
+    public function test_ifATaskCanBeUpdated(): void
+    {
+        $task = Task::factory()->create([
+            'title' => 'Old Title',
+            'description' => 'Old Description',
+        ]);
+
+        $updatedData = [
+            'title' => 'New Title',
+            'description' => 'New Description',
+        ];
+
+        $response = $this->patchJson(route('tasks.update', $task->id), $updatedData);
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('tasks', $updatedData);
+        $this->assertEquals($updatedData['title'], $response->getData()->title);
+        $this->assertEquals($updatedData['description'], $response->getData()->description);
+    }
+
+    public function test_ifATaskCanBeMarkedAsCompleted(): void
+    {
+        $task = Task::factory()->create();
+
+        $response = $this->patchJson(route('tasks.mark.done', $task->id));
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('tasks', [
+            'id' => $task->id,
+            'is_done' => true,
+        ]);
+
+        $this->assertTrue($response->getData()->is_done);
+    }
+
+    public function test_ifATaskCanBeDeleted(): void
+    {
+        $task = Task::factory()->create();
+
+        $response = $this->deleteJson(route('tasks.delete', $task->id));
+        $response->assertStatus(204);
+
+        $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
     }
 }
