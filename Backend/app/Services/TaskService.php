@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
-use App\Dto\Task\TaskDone;
 use App\Dto\Task\TaskInput;
 use App\Models\Task;
+use App\Models\User;
 use App\Repositories\TaskRepository;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 
 class TaskService
 {
@@ -15,7 +17,7 @@ class TaskService
 
     public function new(TaskInput $task): Task
     {
-        return $this->taskRepo->create($task);
+        return $this->taskRepo->create(Auth::user(), $task);
     }
 
     public function update(Task $task, TaskInput $new): Task
@@ -33,5 +35,10 @@ class TaskService
     {
         $this->taskRepo->setDone($task);
         return $task->refresh();
+    }
+
+    public function findAllByUser(User $user): LengthAwarePaginator
+    {
+        return $this->taskRepo->findAllByUser($user);
     }
 }

@@ -11,7 +11,7 @@ class AuthTest extends TestCase
 {
     use DatabaseTransactions;
 
-    public function test_user_can_register()
+    public function test_userCanRegister()
     {
         $response = $this->postJson('/api/register', [
             'name' => 'Alyson Nunes',
@@ -29,7 +29,7 @@ class AuthTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'alyson@example.com']);
     }
 
-    public function test_user_can_login_and_receive_token()
+    public function test_userCanLoginAndReceiveToken()
     {
         $user = User::factory()->create([
             'email' => 'alyson@example.com',
@@ -48,7 +48,7 @@ class AuthTest extends TestCase
                 ]);
     }
 
-    public function test_user_can_access_protected_route_with_token()
+    public function test_userCanAccessProtectedRouteWithToken()
     {
         $user = User::factory()->create();
         $token = auth('api')->login($user);
@@ -60,7 +60,7 @@ class AuthTest extends TestCase
                 ->assertJsonFragment(['email' => $user->email]);
     }
 
-    public function test_user_can_refresh_token()
+    public function test_userCanRefreshToken()
     {
         $user = User::factory()->create();
         $token = auth('api')->login($user);
@@ -75,7 +75,7 @@ class AuthTest extends TestCase
                 ]);
     }
 
-    public function test_user_can_logout()
+    public function test_userCanLogout()
     {
         $user = User::factory()->create();
         $token = auth('api')->login($user);

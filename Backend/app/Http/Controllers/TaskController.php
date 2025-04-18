@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Dto\Task\TaskDone;
 use App\Dto\Task\TaskInput;
-use App\Http\Requests\Task\MarkTaskAsDoneRequest;
 use App\Http\Requests\Task\NewTaskRequest;
 use App\Http\Requests\Task\UpdateTaskRequest;
 use App\Http\Resources\Task\TaskListResource;
@@ -13,6 +11,8 @@ use App\Models\Task;
 use App\Services\TaskService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\UnauthorizedException;
 
 class TaskController extends Controller
 {
@@ -22,7 +22,8 @@ class TaskController extends Controller
 
     public function index()
     {
-        return response()->json(new TaskListResource(Task::paginate(6)));
+        $tasks = $this->taskService->findAllByUser(Auth::user());
+        return response()->json(new TaskListResource($tasks));
     }
 
     public function store(NewTaskRequest $request): JsonResponse
@@ -34,13 +35,21 @@ class TaskController extends Controller
         return response()->json(new TaskResource($task), Response::HTTP_CREATED);
     }
 
-    public function show(string $id)
+    public function show(Task $task)
     {
-        //
+        if (!auth()->user()->can('view', $task)) {
+            throw new UnauthorizedException();
+        }
+
+        return response()->json(new TaskResource($task), Response::HTTP_OK);
     }
 
     public function update(UpdateTaskRequest $request, Task $task): JsonResponse
     {
+        if (!auth()->user()->can('update', $task)) {
+            throw new UnauthorizedException();
+        }
+
         $updated = $this->taskService->update(
             $task,
             TaskInput::fromArray($request->validated())
@@ -51,14 +60,21 @@ class TaskController extends Controller
 
     public function destroy(Task $task): JsonResponse
     {
+        if (!auth()->user()->can('delete', $task)) {
+            throw new UnauthorizedException();
+        }
+
         $this->taskService->delete($task);
         return response()->json([], Response::HTTP_NO_CONTENT);
     }
 
     public function markDone(Task $task): JsonResponse
     {
-        $updated = $this->taskService->setDone($task);
+        if (!auth()->user()->can('update', $task)) {
+            throw new UnauthorizedException();
+        }
 
+        $updated = $this->taskService->setDone($task);
         return response()->json(new TaskResource($updated), Response::HTTP_OK);
     }
 }
